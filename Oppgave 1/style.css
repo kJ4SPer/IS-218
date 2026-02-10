@@ -1,0 +1,12 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#map {
+    /* Vi vil at kartet skal dekke hele skjermen */
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+}

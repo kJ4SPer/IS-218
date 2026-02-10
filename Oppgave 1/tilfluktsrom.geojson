@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "navn": "Torvet Parkering",
+        "kapasitet": 500,
+        "type": "Offentlig"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.0015, 58.1465]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "navn": "UiA Kjeller",
+        "kapasitet": 1200,
+        "type": "Offentlig"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.0050, 58.1620]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "navn": "Aquarama",
+        "kapasitet": 300,
+        "type": "Privat/Offentlig"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.0090, 58.1450]
+      }
+    }
+  ]
+}
