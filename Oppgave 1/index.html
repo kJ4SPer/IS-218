@@ -13,7 +13,25 @@
 
     <div id="map"></div>
 
+    <div id="console">
+        <h3>Kartlag</h3>
+        <div class="session">
+            <label>
+                <input id="toggle-tilfluktsrom" type="checkbox" checked>
+                Tilfluktsrom (GeoJSON)
+            </label>
+        </div>
+        <div class="session">
+            <label>
+                <input id="toggle-ressurser" type="checkbox" checked>
+                Ressurser (Database)
+            </label>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <script src="main.js"></script>
 </body>

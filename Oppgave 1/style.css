@@ -10,3 +10,25 @@ body {
     bottom: 0;
     width: 100%;
 }
+
+#console {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 200px;
+    background-color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: 1; /* Sørger for at den ligger oppå kartet */
+}
+
+h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+
+.session {
+    margin-bottom: 10px;
+}
