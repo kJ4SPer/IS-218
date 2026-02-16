@@ -10,14 +10,15 @@ const supabaseClient = maplibregl.supaClient = supabase.createClient(SUPABASE_UR
 
 
 // --- KART-OPPSETT ---
+const kristiansand = [7.994, 58.146];
+
 const map = new maplibregl.Map({
     container: 'map',
-    style: 'https://demotiles.maplibre.org/style.json',
-    center: [8.005, 58.15],
-    zoom: 13
+    style: 'https://tiles.stadiamaps.com/styles/alidade_smooth.json',
+    center: kristiansand,
+    zoom: 12
 });
-map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
+map.addControl(new maplibregl.NavigationControl(), 'top-right');    
 
 // --- NÅR KARTET ER LASTET ---
 map.on('load', async () => {
