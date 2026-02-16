@@ -11,28 +11,43 @@
 </head>
 <body>
 
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
     <div id="map"></div>
 
-    <div id="console">
-        <h3>Kartlag</h3>
-        <div class="session">
-            <label>
-                <input id="toggle-tilfluktsrom" type="checkbox" checked>
-                Tilfluktsrom (GeoJSON)
-            </label>
+    <aside id="sidebar">
+        <div class="sidebar-content">
+            <h2>Beredskapskart</h2>
+            <p class="subtitle">Kristiansand</p>
+
+            <section>
+                <h3>Kartlag</h3>
+                <div class="layer-toggle">
+                    <input id="toggle-tilfluktsrom" type="checkbox" checked>
+                    <label for="toggle-tilfluktsrom">Tilfluktsrom</label>
+                </div>
+                <div class="layer-toggle">
+                    <input id="toggle-ressurser" type="checkbox" checked>
+                    <label for="toggle-ressurser">Ressurser</label>
+                </div>
+            </section>
+
+            <section>
+                <h3>Verktøy</h3>
+                <div id="tools">
+                    <button id="my-location-btn" class="button">Finn min posisjon</button>
+                    <!-- Her kommer "Finn min posisjon"-knappen -->
+                </div>
+            </section>
         </div>
-        <div class="session">
-            <label>
-                <input id="toggle-ressurser" type="checkbox" checked>
-                Ressurser (Database)
-            </label>
-        </div>
-    </div>
+    </aside>
 
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>

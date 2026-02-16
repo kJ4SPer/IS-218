@@ -1,34 +1,183 @@
+/* --- GENERELT --- */
+:root {
+    --primary-bg: #ffffff;
+    --secondary-bg: #f8f9fa;
+    --text-color: #212529;
+    --border-color: #dee2e6;
+    --accent-color: #007bff;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 body {
     margin: 0;
     padding: 0;
+    font-family: var(--font-family);
+    color: var(--text-color);
 }
 
 #map {
-    /* Vi vil at kartet skal dekke hele skjermen */
     position: absolute;
     top: 0;
     bottom: 0;
     width: 100%;
 }
 
-#console {
+/* --- SIDEPANEL --- */
+#sidebar {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 200px;
-    background-color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    z-index: 1; /* Sørger for at den ligger oppå kartet */
+    top: 15px;
+    left: 15px;
+    width: 280px;
+    background-color: var(--primary-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    z-index: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-h3 {
-    margin: 0 0 10px;
+.sidebar-content {
+    padding: 20px;
+}
+
+#sidebar h2 {
+    margin: 0 0 5px;
+    font-size: 24px;
+}
+
+#sidebar .subtitle {
+    margin: 0 0 20px;
+    font-size: 16px;
+    color: #6c757d;
+}
+
+#sidebar section {
+    margin-bottom: 20px;
+}
+
+#sidebar section:last-child {
+    margin-bottom: 0;
+}
+
+#sidebar h3 {
+    margin: 0 0 15px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+/* --- LASTEINDIKATOR --- */
+#loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner {
+    border: 8px solid var(--secondary-bg);
+    border-top: 8px solid var(--accent-color);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- KNAPPER --- */
+.button {
+    width: 100%;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+.button:active {
+    background-color: #004a99;
+}
+
+.layer-toggle {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
     font-size: 16px;
 }
 
-.session {
-    margin-bottom: 10px;
+.layer-toggle label {
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.layer-toggle input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* --- EGENDEFINERTE POPUPS --- */
+.maplibregl-popup-content {
+    background-color: var(--primary-bg);
+    border-radius: 6px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    padding: 15px;
+    font-family: var(--font-family);
+    max-width: 280px !important;
+}
+
+.maplibregl-popup-close-button {
+    color: var(--text-color);
+    font-size: 20px;
+}
+
+.custom-popup h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: var(--accent-color);
+}
+
+.custom-popup p {
+    margin: 0 0 5px;
+}
+
+.custom-popup p strong {
+    color: #495057;
+}
+
+.custom-popup em {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.custom-popup .popup-hendelse {
+    border-left: 4px solid orange;
+    padding-left: 12px;
+}
+
+.custom-popup .popup-hendelse h4 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: orange;
 }

@@ -1,156 +1,42 @@
-// --- KONFIGURASJON ---
-// 1. URL til Supabase-prosjektet
-const SUPABASE_URL = 'https://chivwckzhhugbzmpmstu.supabase.co';
+// --- HOVEDFIL (main.js) ---
+// Denne filen er applikasjonens startpunkt. Den importerer funksjonalitet
+// fra de ulike modulene og sørger for at alt blir initialisert i riktig rekkefølge.
 
-// 2. API-nøkkel (Anon/Public key)
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoaXZ3Y2t6aGh1Z2J6bXBtc3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MjA0ODYsImV4cCI6MjA4NjM5NjQ4Nn0.mbCIwUL6tzEN_JEus9vfAjStauOC5NbSd1OqM7TRy-U';
+import { initializeMap } from './map.js';
+import { addWmsLayer, addResourcesLayer, addSheltersLayer } from './layers.js';
+import { setupLayerToggles, addLayerInteractions, addMapClickInteraction, setupMyLocationButton } from './ui.js';
 
-// Opprett kobling til Supabase
-const supabaseClient = maplibregl.supaClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Hent referanse til laste-elementet
+const loader = document.getElementById('loader');
 
+// Funksjon for å skjule laste-indikatoren
+const hideLoader = () => {
+    loader.style.display = 'none';
+};
 
-// --- KART-OPPSETT ---
-const map = new maplibregl.Map({
-    container: 'map',
-    style: 'https://demotiles.maplibre.org/style.json',
-    center: [8.005, 58.15],
-    zoom: 13
-});
-map.addControl(new maplibregl.NavigationControl(), 'top-right');
+// 1. Initialiser kartet
+const map = initializeMap();
 
-
-// --- NÅR KARTET ER LASTET ---
+// 2. Når kartet er fullstendig lastet, kan vi begynne å legge til data og funksjonalitet.
 map.on('load', async () => {
-    console.log("Kartet er lastet, nå henter vi data...");
+    console.log("Kartet er lastet. Starter å legge til lag og funksjonalitet...");
 
-    // ============================================================
-    // DEL 1: HENT DATA FRA SUPABASE (GRØNNE SIRKLER)
-    // ============================================================
-
-    // 1. Hent data via RPC-funksjon fra databasen
-    const { data, error } = await supabaseClient.rpc('get_all_ressurser');
-
-    if (error) {
-        console.error("Feil ved henting av data:", error);
-        return;
-    }
-
-    console.log("Vi fant disse ressursene:", data);
-
-    // 2. Konverter dataene til GeoJSON-format
-    const features = data.map(ressurs => ({
-        type: 'Feature',
-        geometry: {
-            type: 'Point',
-            coordinates: [ressurs.lng, ressurs.lat]
-        },
-        properties: {
-            navn: ressurs.navn,
-            kategori: ressurs.kategori,
-            beskrivelse: ressurs.beskrivelse
-        }
-    }));
-
-    const geoJsonData = {
-        type: 'FeatureCollection',
-        features: features
-    };
-
-    // 3. Legg til kilde og lag på kartet
-    map.addSource('supabase-ressurser', {
-        type: 'geojson',
-        data: geoJsonData
-    });
-
-    map.addLayer({
-        id: 'ressurser-lag',
-        type: 'circle',
-        source: 'supabase-ressurser',
-        paint: {
-            'circle-color': '#00ff00', // Grønn
-            'circle-radius': 10,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#000000'
-        }
-    });
-
-    // 4. Interaksjon (Popup og Hover)
-    map.on('click', 'ressurser-lag', (e) => {
-        const props = e.features[0].properties;
-        const coords = e.features[0].geometry.coordinates.slice();
-
-        new maplibregl.Popup()
-            .setLngLat(coords)
-            .setHTML(`
-                <h3>${props.navn}</h3>
-                <p><strong>Kategori:</strong> ${props.kategori}</p>
-                <p>${props.beskrivelse}</p>
-            `)
-            .addTo(map);
-    });
+    // 3. Legg til de ulike kartlagene
+    // Bruker Promise.all for å vente på at alle lag som henter data er ferdige.
+    await Promise.all([
+        addSheltersLayer(map),  // Tilfluktsrom (røde sirkler)
+        addResourcesLayer(map) // Beredskapsressurser (grønne sirkler)
+    ]);
     
-    map.on('mouseenter', 'ressurser-lag', () => map.getCanvas().style.cursor = 'pointer');
-    map.on('mouseleave', 'ressurser-lag', () => map.getCanvas().style.cursor = '');
+    addWmsLayer(map); // Geonorge bakgrunnskart (legges under de andre)
 
+    // 4. Sett opp UI-elementer og interaksjoner
+    setupLayerToggles(map);         // Koble av/på-knappene til kartlagene
+    addLayerInteractions(map);      // Aktiver popups og hover-effekter for lagene
+    addMapClickInteraction(map);    // Aktiver "finn nærmeste"-funksjonen ved klikk på kartet
+    setupMyLocationButton(map);     // Aktiver "Finn min posisjon"-knappen
 
-    // ============================================================
-    // DEL 2: HENT LOKALE DATA (RØDE SIRKLER - TILFLUKTSROM)
-    // ============================================================
-
-    // 1. Hent lokal fil
-    const response = await fetch('./tilfluktsrom.geojson');
-    const tilfluktsromData = await response.json();
-    console.log("Vi fant disse tilfluktsrommene:", tilfluktsromData);
-
-    // 2. Legg til kilde og lag
-    map.addSource('tilfluktsrom-kilde', {
-        type: 'geojson',
-        data: tilfluktsromData
-    });
-
-    map.addLayer({
-        id: 'tilfluktsrom-lag',
-        type: 'circle',
-        source: 'tilfluktsrom-kilde',
-        paint: {
-            'circle-color': '#ff0000', // Rød
-            'circle-radius': 8,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff'
-        }
-    });
-
-    // 3. Interaksjon (Popup og Hover)
-    map.on('click', 'tilfluktsrom-lag', (e) => {
-        const props = e.features[0].properties;
-        const coords = e.features[0].geometry.coordinates.slice();
-
-        new maplibregl.Popup()
-            .setLngLat(coords)
-            .setHTML(`
-                <h3>${props.navn}</h3>
-                <p><strong>Type:</strong> ${props.type}</p>
-                <p><strong>Kapasitet:</strong> ${props.kapasitet} personer</p>
-            `)
-            .addTo(map);
-    });
-    
-    map.on('mouseenter', 'tilfluktsrom-lag', () => map.getCanvas().style.cursor = 'pointer');
-    map.on('mouseleave', 'tilfluktsrom-lag', () => map.getCanvas().style.cursor = '');
-
-    // ============================================================
-    // DEL 3: KONTROLLPANEL (VIS/SKJUL LAG)
-    // ============================================================
-
-    // Knapp for Tilfluktsrom
-    document.getElementById('toggle-tilfluktsrom').addEventListener('change', (e) => {
-        const visibility = e.target.checked ? 'visible' : 'none';
-        map.setLayoutProperty('tilfluktsrom-lag', 'visibility', visibility);
-    });
-
-    // Knapp for Ressurser
-    document.getElementById('toggle-ressurser').addEventListener('change', (e) => {
-        const visibility = e.target.checked ? 'visible' : 'none';
-        map.setLayoutProperty('ressurser-lag', 'visibility', visibility);
-    });
+    // 5. Skjul laste-indikatoren
+    hideLoader();
+    console.log("Applikasjonen er klar!");
 });
