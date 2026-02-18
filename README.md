@@ -6,7 +6,7 @@ Dette er en interaktiv kartløsning utviklet for å gi innbyggere i Kristiansand
 
 ### Demo av systemet
 
-[Klikk her for å se demo av systemet](Demo.mp4)
+[Klikk her for å se en demonstrasjon av systemet (YouTube)](https://youtu.be/ARDVRcfLHEs)
 
 ### Teknisk Stack
 
