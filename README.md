@@ -50,3 +50,12 @@ graph TD
     User -- 4. Sender koordinater (Klikk) --> Supabase
     Supabase -- 5. Returnerer nærmeste ressurs (Spatial Query) --> User
 ```
+
+### Refleksjon og forbedringspunkter
+
+Her er noen forbedringspunkter ved den nåværende løsningen som vi tenkte var mest relevante:
+
+1. **Sikkerhet:** API-nøkkelen til Supabase ligger åpent i koden (config.js). Selv om dette er en "anon"-nøkkel, burde applikasjonen ideelt sett hatt strengere Row Level Security (RLS) policies, eller brukt en proxy-server for å skjule nøklene.
+2. **Ytelse ved skalering:** tilfluktsrom.geojson lastes i sin helhet inn i nettleserens minne. Hvis vi skulle dekket hele Norge, ville filen blitt for tung. Da burde dataene enten ligget i databasen eller blitt servert som Vector Tiles (MVT).
+3. **Offline-støtte:** I en reell krisesituasjon kan internett være nede. Applikasjonen burde vært en Progressive Web App (PWA) som cachet kartdata og statiske filer for offline bruk.
+4. **Oppdatering av data:** Tilfluktsrom-dataene er nå en statisk fil. En bedre løsning ville vært å hente disse direkte fra Geonorge sitt API for å alltid ha oppdaterte data.
