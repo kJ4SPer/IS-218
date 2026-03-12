@@ -1,7 +1,7 @@
 // --- UI-MODUL ---
 // Denne modulen håndterer brukergrensesnitt-elementer og interaksjoner.
 
-import { findNearestResource } from './api.js';
+import { findNearestResource, findResourcesWithinRadius } from './api.js';
 
 /**
  * Setter opp funksjonalitet for å vise/skjule kartlag via avkrysningsbokser.
@@ -79,38 +79,67 @@ export function addLayerInteractions(map) {
  */
 export function addMapClickInteraction(map) {
     map.on('click', async (e) => {
-        // 1. Sjekk om klikket traff et eksisterende objekt. I så fall, avbryt,
-        // fordi da skal den vanlige popupen for det objektet vises.
+        // Sjekk om vi klikket direkte på en eksisterende prikk
         const features = map.queryRenderedFeatures(e.point, {
             layers: ['tilfluktsrom-lag', 'ressurser-lag']
         });
-        if (features.length > 0) {
-            return;
+        if (features.length > 0) return; // Avbryt, la standard popup ta seg av dette
+
+        const klikk_lon = e.lngLat.lng;
+        const klikk_lat = e.lngLat.lat;
+        const radiusMeter = 1000; // Vi setter søkeradius til 1 kilometer
+
+        // 1. Spør Supabase: "Hva finnes innenfor 1000 meter herfra?"
+        const ressurser = await findResourcesWithinRadius(klikk_lon, klikk_lat, radiusMeter);
+
+        // 2. Tegn en visuell sirkel i kartet med Turf.js
+        const center = [klikk_lon, klikk_lat];
+        const options = { steps: 64, units: 'meters' };
+        // turf.circle lager en GeoJSON-polygon formet som en sirkel
+        const circlePolygon = turf.circle(center, radiusMeter, options);
+
+        // Sjekk om vi allerede har tegnet en sirkel før. I så fall oppdaterer vi den, ellers lager vi en ny.
+        if (map.getSource('sok-radius-kilde')) {
+            map.getSource('sok-radius-kilde').setData(circlePolygon);
+        } else {
+            map.addSource('sok-radius-kilde', {
+                type: 'geojson',
+                data: circlePolygon
+            });
+            map.addLayer({
+                id: 'sok-radius-lag',
+                type: 'fill',
+                source: 'sok-radius-kilde',
+                paint: {
+                    'fill-color': '#007cbf', // Blåfarge
+                    'fill-opacity': 0.2,     // Litt gjennomsiktig
+                    'fill-outline-color': '#004a73'
+                }
+            });
         }
 
-        // 2. Hent koordinatene for klikket.
-        const { lng, lat } = e.lngLat;
+        // 3. Bygg innholdet i Popup-boksen
+        let htmlInnhold = `
+            <div style="border-left: 4px solid #007cbf; padding-left: 10px;">
+                <h4>📍 Områdesøk</h4>
+                <p><strong>Radius:</strong> ${radiusMeter} meter</p>
+        `;
 
-        // 3. Utfør den romlige spørringen via API-modulen.
-        const nearestData = await findNearestResource(lng, lat);
-
-        // 4. Vis resultatet i en ny popup.
-        if (nearestData && nearestData.length > 0) {
-            const nearest = nearestData[0];
-            const distance = Math.round(nearest.avstand_meter); // Rund av til hele meter.
-
-            new maplibregl.Popup({ className: 'custom-popup' })
-                .setLngLat([lng, lat])
-                .setHTML(`
-                    <div class="popup-hendelse">
-                        <h4>📍 Din posisjon</h4>
-                        <p><strong>Nærmeste ressurs:</strong><br> ${nearest.navn}</p>
-                        <p><strong>Kategori:</strong> ${nearest.kategori}</p>
-                        <p><strong>Avstand:</strong> ca. ${distance} meter</p>
-                    </div>
-                `)
-                .addTo(map);
+        if (ressurser && ressurser.length > 0) {
+            htmlInnhold += `<p><strong>Fant ${ressurser.length} ressurser:</strong></p><ul style="padding-left: 20px; margin-top: 5px;">`;
+            ressurser.forEach(r => {
+                htmlInnhold += `<li>${r.navn} - <em>${Math.round(r.avstand)}m</em></li>`;
+            });
+            htmlInnhold += `</ul></div>`;
+        } else {
+            htmlInnhold += `<p>Ingen beredskapsressurser funnet i dette området.</p></div>`;
         }
+
+        // 4. Vis Popup
+        new maplibregl.Popup()
+            .setLngLat([klikk_lon, klikk_lat])
+            .setHTML(htmlInnhold)
+            .addTo(map);
     });
 }
 

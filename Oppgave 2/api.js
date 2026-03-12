@@ -89,3 +89,27 @@ export async function fetchLocalShelters() {
         return null;
     }
 }
+
+/**
+ * Finner ressurser innenfor en gitt radius ved hjelp av PostGIS (ST_DWithin).
+ * @param {number} lon - Lengdegrad
+ * @param {number} lat - Breddegrad
+ * @param {number} radiusMeter - Søkeradius i meter
+ * @returns {Promise<Array>} Liste med ressurser innenfor radiusen
+ */
+export async function findResourcesWithinRadius(lon, lat, radiusMeter) {
+    console.log(`Starter romlig søk innenfor ${radiusMeter}m for posisjon: ${lon}, ${lat}`);
+    
+    const { data, error } = await supabaseClient.rpc('finn_ressurser_innen_radius', {
+        bruker_lon: lon,
+        bruker_lat: lat,
+        radius_meter: radiusMeter
+    });
+
+    if (error) {
+        console.error("Feil ved bruk av ST_DWithin i Supabase:", error);
+        return null;
+    }
+    
+    return data;
+}

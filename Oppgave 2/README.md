@@ -1,60 +1,64 @@
-# Beredskapskart for Kristiansand 🚨
+# Oppgave 2: GIScience og Romlig Analyse 🌍
 
-### TL;DR
+## Notebook-guide (Del A)
 
-Dette er en interaktiv kartløsning utviklet for å gi innbyggere i Kristiansand oversikt over kritisk infrastruktur som tilfluktsrom og beredskapsressurser. Applikasjonen lar brukere filtrere kartlag, finne sin egen posisjon, og utføre romlige søk for å lokalisere nærmeste nødressurs ved en hendelse.
+For den analytiske delen av oppgaven (Romlig analyse i Python), se den vedlagte Jupyter Notebook-filen:
+👉 **[oppgave2.ipynb](./oppgave2.ipynb)**
+
+---
+
+## Utvidelse av Webkart (Del B)
+
+### Beskrivelse av utvidelsen
+
+Beredskapskartet fra Oppgave 1 er nå utvidet med en interaktiv områdesøk-funksjon (Spatial SQL). Når brukeren klikker et sted i kartet, vil applikasjonen:
+
+1. Sende koordinatene for klikket til databasen (Supabase).
+2. Gjennomføre et romlig søk som finner alle beredskapsressurser innenfor en radius på 1000 meter.
+3. Tegne en visuell, blå sirkel (buffer) på kartet ved hjelp av `Turf.js`.
+4. Vise en dynamisk popup som lister opp de funnede ressursene og deres nøyaktige avstand i meter fra klikkpunktet.
 
 ### Demo av systemet
 
-[Klikk her for å se en demonstrasjon av systemet (YouTube)](https://youtu.be/ARDVRcfLHEs)
+[Klikk her for å se en demonstrasjon av systemet (YouTube)](https://youtu.be/d7U8nEflTzY)
 
-### Teknisk Stack
+### SQL-snippet (PostGIS)
 
-Prosjektet er bygget som en modulær frontend-applikasjon uten byggsteg (Vanilla JS + ES Modules).
+For å utføre det romlige søket, ble følgende RPC-funksjon opprettet i Supabase. Funksjonen tar i bruk `ST_DWithin` for å filtrere ut ressurser som befinner seg innenfor sirkelen, og `ST_Distance` for å nøyaktig beregne avstanden til hver ressurs.
 
-- **Kartbibliotek:** MapLibre GL JS (v4.7.1)
-- **Database & Backend:** Supabase (PostgreSQL med PostGIS-utvidelse)
-- **Klient:** Supabase JS Client (v2)
-- **GIS-verktøy:** QGIS 3.40 (for dataprosessering)
-- **Språk:** JavaScript (ES6 Modules), CSS3, HTML5
-
-### Datakatalog
-
-| Datasett                    | Kilde                   | Format              | Bearbeiding                                                                                                                                                                       |
-| :-------------------------- | :---------------------- | :------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Offentlige tilfluktsrom** | DSB / Geonorge          | GeoJSON             | Lastet ned rådata for hele Norge. Filtrert ut Kristiansand kommune i QGIS. Transformert koordinatsystem fra UTM33 til WGS84 (EPSG:4326) og eksportert som `tilfluktsrom.geojson`. |
-| **Beredskapsressurser**     | Egendefinert (Supabase) | PostGIS (Geography) | Lagret i skybasert SQL-database. Hentes dynamisk via RPC-kall (`get_all_ressurser`). Inneholder punkter som hjertestartere og samlingsplasser.                                    |
-| **Bakgrunnskart**           | Kartverket / Geonorge   | WMS (Raster)        | Hentes direkte fra Geonorge sin WMS-tjeneste ("Topografisk norgeskart gråtone") for å gi nøytral bakgrunn med god kontrast.                                                       |
-
-### Arkitekturskisse
-
-Slik flyter dataene gjennom applikasjonen:
-
-```mermaid
-graph TD
-    User[Bruker / Nettleser]
-
-    subgraph "Eksterne Kilder"
-        WMS[Geonorge WMS]
-    end
-
-    subgraph "Backend & Data"
-        Supabase[(Supabase PostGIS)]
-        LocalFile[Lokal GeoJSON fil]
-    end
-
-    User -- 1. Henter bakgrunnskart (Tiles) --> WMS
-    User -- 2. Henter statiske tilfluktsrom --> LocalFile
-    User -- 3. Henter dynamiske ressurser (RPC) --> Supabase
-    User -- 4. Sender koordinater (Klikk) --> Supabase
-    Supabase -- 5. Returnerer nærmeste ressurs (Spatial Query) --> User
+```sql
+CREATE OR REPLACE FUNCTION finn_ressurser_innen_radius(bruker_lon FLOAT, bruker_lat FLOAT, radius_meter FLOAT)
+RETURNS TABLE (
+    id INT,
+    navn TEXT,
+    kategori TEXT,
+    avstand FLOAT,
+    lat FLOAT,
+    lon FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        r.id,
+        r.navn,
+        r.kategori,
+        -- ST_Distance beregner avstanden i meter
+        ST_Distance(
+            r.location,
+            ST_SetSRID(ST_Point(bruker_lon, bruker_lat), 4326)::geography
+        ) AS avstand,
+        ST_Y(r.location::geometry) AS lat,
+        ST_X(r.location::geometry) AS lon
+    FROM ressurser r
+    -- ST_DWithin sjekker om ressursen er innenfor oppgitt radius
+    WHERE ST_DWithin(
+        r.location,
+        ST_SetSRID(ST_Point(bruker_lon, bruker_lat), 4326)::geography,
+        radius_meter
+    )
+    ORDER BY avstand ASC;
+END;
+$$;
 ```
-
-### Refleksjon og forbedringspunkter
-
-Her er noen forbedringspunkter ved den nåværende løsningen som vi tenkte var mest relevante:
-
-1. **Sikkerhet:** API-nøkkelen til Supabase ligger åpent i koden (config.js). Selv om dette er en "anon"-nøkkel, burde applikasjonen ideelt sett hatt strengere Row Level Security (RLS) policies, eller brukt en proxy-server for å skjule nøklene.
-2. **Ytelse ved skalering:** tilfluktsrom.geojson lastes i sin helhet inn i nettleserens minne. Hvis vi skulle dekket hele Norge, ville filen blitt for tung. Da burde dataene enten ligget i databasen eller blitt servert som Vector Tiles (MVT).
-3. **Offline-støtte:** I en reell krisesituasjon kan internett være nede. Applikasjonen burde vært en Progressive Web App (PWA) som cachet kartdata og statiske filer for offline bruk.
-4. **Oppdatering av data:** Tilfluktsrom-dataene er nå en statisk fil. En bedre løsning ville vært å hente disse direkte fra Geonorge sitt API for å alltid ha oppdaterte data.
