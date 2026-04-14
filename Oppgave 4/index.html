@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beredskapskart Kristiansand</title>
+    
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <aside id="sidebar">
+        <div class="sidebar-content">
+            <h2>Beredskapskart</h2>
+            <p class="subtitle">Kristiansand</p>
+
+            <section>
+                <h3>Kartlag</h3>
+                <div class="layer-toggle">
+                    <input id="toggle-tilfluktsrom" type="checkbox" checked>
+                    <label for="toggle-tilfluktsrom">Tilfluktsrom</label>
+                </div>
+                <div class="layer-toggle">
+                    <input id="toggle-ressurser" type="checkbox" checked>
+                    <label for="toggle-ressurser">Ressurser</label>
+                </div>
+            </section>
+
+            <section>
+                <h3>Verktøy</h3>
+                <div id="tools">
+                    <button id="my-location-btn" class="button">Finn min posisjon</button>
+                    <!-- Her kommer "Finn min posisjon"-knappen -->
+                </div>
+            </section>
+        </div>
+    </aside>
+
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script type="module" src="main.js"></script>
+</body>
+</html>
