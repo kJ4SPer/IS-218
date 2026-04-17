@@ -1,49 +1,59 @@
-// --- HOVEDFIL (main.js) ---
-// Denne filen er applikasjonens startpunkt. Den importerer funksjonalitet
-// fra de ulike modulene og sørger for at alt blir initialisert i riktig rekkefølge.
-
 import { initializeMap } from './map.js';
-import { addWmsLayer, addResourcesLayer, addSheltersLayer, addFloodLayers } from './layers.js';
+import { addResourcesLayer, addSheltersLayer, addFloodLayers } from './layers.js';
 import { setupLayerToggles, addLayerInteractions, addMapClickInteraction, setupMyLocationButton } from './ui.js';
 
-// Hent referanse til laste-elementet
 const loader = document.getElementById('loader');
 
-// Funksjon for å skjule laste-indikatoren
 const hideLoader = () => {
-    loader.style.display = 'none';
+    if (loader) {
+        loader.classList.remove('d-flex');
+        loader.classList.add('d-none');
+    }
 };
 
-// 1. Initialiser kartet
 const map = initializeMap();
 
-// 2. Når kartet er fullstendig lastet, kan vi begynne å legge til data og funksjonalitet.
 map.on('load', async () => {
-    console.log("Kartet er lastet. Starter å legge til lag og funksjonalitet...");
+    try {
+        await Promise.all([
+            addSheltersLayer(map),
+            addResourcesLayer(map)
+        ]);
+        
+        addFloodLayers(map);
 
-    // 3. Legg til de ulike kartlagene i riktig rekkefølge
-    
-    // Først legger vi til bakgrunnskartet
-    addWmsLayer(map);
+        setupLayerToggles(map);
+        addLayerInteractions(map);
+        addMapClickInteraction(map);
+        setupMyLocationButton(map);
 
-    // Så venter vi på at hoveddataene (punktene) skal lastes ferdig
-    await Promise.all([
-        addSheltersLayer(map), // Dette oppretter 'tilfluktsrom-lag'
-        addResourcesLayer(map) // Dette oppretter 'ressurser-lag'
-    ]);
-    
-    // NÅ som 'tilfluktsrom-lag' eksisterer, kan vi trygt legge til flomvannet under det!
-    addFloodLayers(map);
-    
-    
+        // --- ANIMERT RADARPULS FOR SÅRBARE OBJEKTER ---
+        let radius = 15;
+        let opacity = 0.8;
+        
+        function animateVulnerablePulse() {
+            setTimeout(() => {
+                requestAnimationFrame(animateVulnerablePulse);
+                
+                radius += 0.4;
+                opacity -= 0.015;
 
-    // 4. Sett opp UI-elementer og interaksjoner
-    setupLayerToggles(map);         // Koble av/på-knappene til kartlagene
-    addLayerInteractions(map);      // Aktiver popups og hover-effekter for lagene
-    addMapClickInteraction(map);    // Aktiver "finn nærmeste"-funksjonen ved klikk på kartet
-    setupMyLocationButton(map);     // Aktiver "Finn min posisjon"-knappen
+                if (opacity <= 0) {
+                    radius = 15;
+                    opacity = 0.8;
+                }
 
-    // 5. Skjul laste-indikatoren
-    hideLoader();
-    console.log("Applikasjonen er klar!");
+                if (map.getLayer('saarbare-glod')) {
+                    map.setPaintProperty('saarbare-glod', 'circle-radius', radius);
+                    map.setPaintProperty('saarbare-glod', 'circle-opacity', Math.max(0, opacity));
+                }
+            }, 1000 / 30); // 30 FPS
+        }
+        animateVulnerablePulse();
+
+    } catch (error) {
+        console.error("SYS.ERR:", error);
+    } finally {
+        hideLoader();
+    }
 });
