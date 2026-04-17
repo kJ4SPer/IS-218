@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "saarbare_tilfluktsrom_web",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "lokalId": "bcef8b67-38c2-4c08-a3d0-7fdd35984dff", "navnerom": "https://data.geonorge.no/sosi/samfunnssikkerhet/tilfluktsrom", "versjonId": "20191001", "datauttaksdato": "2026-04-14T01:40:59", "opphav_left": "Direktoratet for samfunnssikkerhet og beredskap", "romnr": 2205, "plasser": 150, "adresse": "HOLBÆK ERIKSENSGATE 10", "objtype": "Tilfluktsrom", "index_right": 0, "objektType": "FlomAreal", "flomsoneID": "fs022_1", "gjentaksinterval": 200.0, "gjentaksintervall": 200.0, "statusKartlegging": 1, "statusDato": "20231116", "opphav_right": "Sweco", "symbolFlom": 1.0, "malemetode": 61.0, "noyaktighet": 100.0, "forsteDigitaliseringsdato": "20181113", "lavpunkt": 0.0, "dataUttaksdato": "20260414", "eksportType": "NVEs nedlastningsløsning" }, "geometry": { "type": "Point", "coordinates": [ 7.460789772253757, 58.029529388025338 ] } }
+]
+}
