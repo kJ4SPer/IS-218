@@ -114,9 +114,9 @@ export function addFloodLayers(map) {
         source: 'flomsone-kilde',
         paint: {
             'fill-color': '#007cbf',
-            'fill-opacity': 0.6, // Litt mørkere for å synes bedre
-            'fill-outline-color': '#004a73'
-        }
+            'fill-opacity': 0.4,
+            'fill-outline-color': '#ffffff', // Hvit outline gjør at kantene popper mer
+            }
     }, 'tilfluktsrom-lag'); // <--- Dette trikset legger flommen UNDER tilfluktsrommene!
 
     // 2. Sårbare tilfluktsrom (De røde)
@@ -136,5 +136,17 @@ export function addFloodLayers(map) {
             'circle-stroke-color': '#ffffff'
         }
     });
+
+    map.addLayer({
+    id: 'saarbare-glod',
+    type: 'circle',
+    source: 'saarbare-kilde',
+    paint: {
+        'circle-radius': 15,
+        'circle-color': '#FF0000',
+        'circle-opacity': 0.3,
+        'circle-blur': 1 // Gjør kanten veldig myk (glødende)
+    }
+});
 }
 

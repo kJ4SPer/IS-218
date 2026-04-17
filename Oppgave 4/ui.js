@@ -22,10 +22,14 @@ export function setupLayerToggles(map) {
 
     // Lytter etter endringer på avkrysningsboksen for flomsone.
     document.getElementById('toggle-flomsone').addEventListener('change', (e) => {
-        const visibility = e.target.checked ? 'visible' : 'none';
-        map.setLayoutProperty('flomsone-lag', 'visibility', visibility);
-        map.setLayoutProperty('saarbare-lag', 'visibility', visibility);
-    });
+    const visibility = e.target.checked ? 'visible' : 'none';
+    const display = e.target.checked ? 'block' : 'none'; // Ny linje
+    
+    map.setLayoutProperty('flomsone-lag', 'visibility', visibility);
+    map.setLayoutProperty('saarbare-lag', 'visibility', visibility);
+    map.setLayoutProperty('saarbare-glod', 'visibility', visibility);
+    document.getElementById('flom-info').style.display = display; // Ny linje
+});
 }
 
 /**
@@ -77,6 +81,24 @@ export function addLayerInteractions(map) {
         <p><strong>Kapasitet:</strong> ${props.plasser} personer</p>
         <p><em>Romnummer: ${props.romnr}</em></p>
     `);
+
+    map.on('click', 'saarbare-lag', (e) => {
+    const properties = e.features[0].properties;
+    
+    new maplibregl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(`
+            <div style="color: #d32f2f; font-weight: bold; border-bottom: 1px solid #ccc; margin-bottom: 5px;">
+                🚨 STATUS: KRITISK (I FLOMSONE)
+            </div>
+            <strong>Adresse:</strong> ${properties.adresse || 'Ukjent'}<br>
+            <strong>Kapasitet:</strong> ${properties.plasser} plasser<br>
+            <p style="font-size: 0.9em; margin-top: 5px; color: #555;">
+                <em>Merk: Tilgang kan være begrenset ved 200-årsflom.</em>
+            </p>
+        `)
+        .addTo(map);
+});
 }
 
 /**
@@ -148,7 +170,7 @@ export function addMapClickInteraction(map) {
             .setHTML(htmlInnhold)
             .addTo(map);
     });
-}
+} // <--- Denne lukker addMapClickInteraction
 
 /**
  * Setter opp funksjonalitet for "Finn min posisjon"-knappen.
@@ -156,7 +178,7 @@ export function addMapClickInteraction(map) {
  */
 export function setupMyLocationButton(map) {
     const myLocationBtn = document.getElementById('my-location-btn');
-    let userLocationMarker = null; // Holder styr på markøren for brukerens posisjon
+    let userLocationMarker = null;
 
     myLocationBtn.addEventListener('click', () => {
         if (!navigator.geolocation) {
@@ -167,28 +189,24 @@ export function setupMyLocationButton(map) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { longitude, latitude } = position.coords;
-
-                // Flytt kartet til brukerens posisjon
                 map.flyTo({
                     center: [longitude, latitude],
                     zoom: 15,
                     speed: 1.5
                 });
 
-                // Fjern gammel markør hvis den finnes
                 if (userLocationMarker) {
                     userLocationMarker.remove();
                 }
 
-                // Legg til en ny markør på brukerens posisjon
                 userLocationMarker = new maplibregl.Marker({ color: '#007bff' })
                     .setLngLat([longitude, latitude])
                     .addTo(map);
             },
             (error) => {
                 console.error("Feil ved henting av posisjon:", error);
-                alert("Kunne ikke hente posisjonen din. Sørg for at du har gitt tillatelse.");
+                alert("Kunne ikke hente posisjonen din.");
             }
         );
     });
-}
+} 
