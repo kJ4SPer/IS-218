@@ -3,7 +3,7 @@
 // fra de ulike modulene og sørger for at alt blir initialisert i riktig rekkefølge.
 
 import { initializeMap } from './map.js';
-import { addWmsLayer, addResourcesLayer, addSheltersLayer } from './layers.js';
+import { addWmsLayer, addResourcesLayer, addSheltersLayer, addFloodLayers } from './layers.js';
 import { setupLayerToggles, addLayerInteractions, addMapClickInteraction, setupMyLocationButton } from './ui.js';
 
 // Hent referanse til laste-elementet
@@ -21,14 +21,21 @@ const map = initializeMap();
 map.on('load', async () => {
     console.log("Kartet er lastet. Starter å legge til lag og funksjonalitet...");
 
-    // 3. Legg til de ulike kartlagene
-    // Bruker Promise.all for å vente på at alle lag som henter data er ferdige.
+    // 3. Legg til de ulike kartlagene i riktig rekkefølge
+    
+    // Først legger vi til bakgrunnskartet
+    addWmsLayer(map);
+
+    // Så venter vi på at hoveddataene (punktene) skal lastes ferdig
     await Promise.all([
-        addSheltersLayer(map),  // Tilfluktsrom (røde sirkler)
-        addResourcesLayer(map) // Beredskapsressurser (grønne sirkler)
+        addSheltersLayer(map), // Dette oppretter 'tilfluktsrom-lag'
+        addResourcesLayer(map) // Dette oppretter 'ressurser-lag'
     ]);
     
-    addWmsLayer(map); // Geonorge bakgrunnskart (legges under de andre)
+    // NÅ som 'tilfluktsrom-lag' eksisterer, kan vi trygt legge til flomvannet under det!
+    addFloodLayers(map);
+    
+    
 
     // 4. Sett opp UI-elementer og interaksjoner
     setupLayerToggles(map);         // Koble av/på-knappene til kartlagene

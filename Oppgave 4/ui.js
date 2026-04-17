@@ -19,6 +19,13 @@ export function setupLayerToggles(map) {
         const visibility = e.target.checked ? 'visible' : 'none';
         map.setLayoutProperty('ressurser-lag', 'visibility', visibility);
     });
+
+    // Lytter etter endringer på avkrysningsboksen for flomsone.
+    document.getElementById('toggle-flomsone').addEventListener('change', (e) => {
+        const visibility = e.target.checked ? 'visible' : 'none';
+        map.setLayoutProperty('flomsone-lag', 'visibility', visibility);
+        map.setLayoutProperty('saarbare-lag', 'visibility', visibility);
+    });
 }
 
 /**

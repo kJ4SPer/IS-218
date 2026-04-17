@@ -29,7 +29,7 @@ export function addWmsLayer(map) {
         paint: {
             'raster-opacity': 1.0 // Full synlighet.
         }
-    }, 'tilfluktsrom-lag'); // Andre parameter: Legg laget UNDER tilfluktsrom-laget, om det finnes.
+    });
 }
 
 /**
@@ -96,3 +96,45 @@ export async function addSheltersLayer(map) {
         }
     });
 }
+
+/**
+ * Henter og legger til flomsoner og sårbare tilfluktsrom fra våre lokale GeoJSON-filer.
+ * @param {maplibregl.Map} map - Kartobjektet laget skal legges til på.
+ */
+export function addFloodLayers(map) {
+    // 1. Flomsonen (Vi legger den til, men prøver å plassere den under punktene)
+    map.addSource('flomsone-kilde', {
+        type: 'geojson',
+        data: './data/flomsone_web.geojson'
+    });
+
+    map.addLayer({
+        id: 'flomsone-lag',
+        type: 'fill',
+        source: 'flomsone-kilde',
+        paint: {
+            'fill-color': '#007cbf',
+            'fill-opacity': 0.6, // Litt mørkere for å synes bedre
+            'fill-outline-color': '#004a73'
+        }
+    }, 'tilfluktsrom-lag'); // <--- Dette trikset legger flommen UNDER tilfluktsrommene!
+
+    // 2. Sårbare tilfluktsrom (De røde)
+    map.addSource('saarbare-kilde', {
+        type: 'geojson',
+        data: './data/saarbare_tilfluktsrom_web.geojson' 
+    });
+
+    map.addLayer({
+        id: 'saarbare-lag',
+        type: 'circle',
+        source: 'saarbare-kilde',
+        paint: {
+            'circle-radius': 10,       // Litt større enn de vanlige (som er 8)
+            'circle-color': '#FF0000', // Rød
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#ffffff'
+        }
+    });
+}
+
