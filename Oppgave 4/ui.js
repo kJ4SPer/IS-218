@@ -1,6 +1,9 @@
 import { findNearestResource, findResourcesWithinRadius, fetchRoute, fetchLocalShelters } from './api.js';
 import { updateRouteLayer } from './layers.js';
 
+// Delt tilstand for å lagre brukerens posisjon på tvers av funksjoner
+let currentUserPosition = null;
+
 function toggleLayerVisibility(map, layerId, isVisible) {
     if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
@@ -156,12 +159,18 @@ export function setupMyLocationButton(map) {
 
         navigator.geolocation.getCurrentPosition((pos) => {
             const { longitude, latitude } = pos.coords;
-            map.flyTo({ center: [longitude, latitude], zoom: 15, speed: 1.2 });
+            currentUserPosition = [longitude, latitude];
+            
+            map.flyTo({ center: currentUserPosition, zoom: 15, speed: 1.2 });
 
             if (marker) marker.remove();
             
-            marker = new maplibregl.Marker({ color: '#3b82f6' })
-                .setLngLat([longitude, latitude])
+            // Wow-faktor: Pulserende taktiksk markør
+            const el = document.createElement('div');
+            el.className = 'user-location-pulse';
+
+            marker = new maplibregl.Marker({ element: el })
+                .setLngLat(currentUserPosition)
                 .addTo(map);
                 
             btn.innerHTML = originalText;
@@ -176,60 +185,59 @@ export function setupRoutingUI(map) {
     const routeBtn = document.getElementById('find-route-btn');
     if (!routeBtn) return;
 
-    routeBtn.onclick = () => {
+    routeBtn.onclick = async () => {
+        if (!currentUserPosition) {
+            alert("[!] DATA MANGEL: Aktiver POS. TRACKING først.");
+            return;
+        }
+
         routeBtn.disabled = true;
         const originalText = routeBtn.innerHTML;
         routeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> BEREGNER...';
 
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const userPos = [position.coords.longitude, position.coords.latitude];
+        try {
+            const sheltersData = await fetchLocalShelters();
             
-            try {
-                // Henter absolutte data, slik at vi ikke er avhengig av skjermutsnitt/clustering
-                const sheltersData = await fetchLocalShelters();
-                
-                if (!sheltersData || !sheltersData.features || sheltersData.features.length === 0) {
-                    alert("SYS.ERR: Kunne ikke hente tilfluktsrom-data.");
-                    resetBtn();
-                    return;
-                }
-
-                // Turf regner ut det nøyaktige nærmeste punktet i datasettet
-                const nearest = turf.nearestPoint(turf.point(userPos), sheltersData);
-
-                // Fikser undefined-feilen: Konverterer array til objekt slik API-en forventer
-                const startObj = { lng: userPos[0], lat: userPos[1] };
-                const routeData = await fetchRoute(startObj, nearest.geometry.coordinates);
-
-                if (routeData && routeData.geometry) {
-                    updateRouteLayer(map, routeData.geometry);
-                    
-                    const distanceKm = (routeData.distance / 1000).toFixed(1);
-                    const timeMin = Math.max(1, Math.round((distanceKm / 60) * 60));
-
-                    // Turf returnerer egenskapene, vi plukker ut de mest logiske
-                    const romNavn = nearest.properties.navn || nearest.properties.adresse || nearest.properties.romnr || 'UKJENT';
-
-                    showRouteInfo(distanceKm, timeMin, romNavn);
-                    
-                    // Finner en fin zoom/bounding box som viser både start og mål
-                    const bounds = new maplibregl.LngLatBounds(userPos, userPos);
-                    bounds.extend(nearest.geometry.coordinates);
-                    map.fitBounds(bounds, { padding: {top: 50, bottom: 50, left: 350, right: 50}, maxZoom: 15 });
-                } else {
-                    alert("SYS.ERR: Klarte ikke å generere rute via OSRM.");
-                }
-            } catch (error) {
-                console.error("Ruting-feil:", error);
-            } finally {
-                resetBtn();
+            if (!sheltersData) {
+                alert("SYS.ERR: Tilfluktsrom-data utilgjengelig.");
+                return;
             }
-        }, (err) => {
-            alert("Kunne ikke hente posisjon: " + err.message);
-            resetBtn();
-        });
 
-        function resetBtn() {
+            // Finn nærmeste punkt ved hjelp av Turf.js (mer nøyaktig enn queryRenderedFeatures)
+            const userPoint = turf.point(currentUserPosition);
+            const nearest = turf.nearestPoint(userPoint, sheltersData);
+
+            // API-kall til OSRM
+            const startCoords = { lng: currentUserPosition[0], lat: currentUserPosition[1] };
+            const routeData = await fetchRoute(startCoords, nearest.geometry.coordinates);
+
+            if (routeData && routeData.geometry) {
+                updateRouteLayer(map, routeData.geometry);
+                
+                const distanceKm = (routeData.distance / 1000).toFixed(1);
+                const timeMin = Math.max(1, Math.round((distanceKm / 60) * 60));
+
+                showRouteInfo(distanceKm, timeMin, nearest.properties.navn || nearest.properties.adresse || "Nærmeste rom");
+                
+                // Wow-faktor: Filmatisk "Helikopter-view"
+                const bearing = turf.bearing(userPoint, nearest);
+                const bounds = new maplibregl.LngLatBounds(currentUserPosition, currentUserPosition);
+                bounds.extend(nearest.geometry.coordinates);
+
+                map.fitBounds(bounds, {
+                    padding: {top: 50, bottom: 50, left: 350, right: 50},
+                    maxZoom: 15,
+                    pitch: 60,       // Tilt kartet
+                    bearing: bearing, // Roter i kjøreretning
+                    duration: 3000,   // Myk overgang
+                    essential: true
+                });
+            } else {
+                alert("SYS.ERR: Kunne ikke beregne rute.");
+            }
+        } catch (error) {
+            console.error("Routing error:", error);
+        } finally {
             routeBtn.disabled = false;
             routeBtn.innerHTML = originalText;
         }
@@ -242,9 +250,47 @@ function showRouteInfo(dist, time, name) {
     
     infoBox.style.display = 'block';
     infoBox.innerHTML = `
-        <div class="fw-bold text-danger mb-1 border-bottom border-secondary pb-1">AKTIV RUTE</div>
+        <div class="fw-bold text-danger mb-1 border-bottom border-secondary pb-1 text-uppercase">Aktiv Rute</div>
         <div class="mt-2 text-truncate" title="${name}">MÅL: ${name}</div>
         <div>AVST: ${dist} km</div>
-        <div>TID: ${time} min</div>
+        <div>TID: ~${time} min (60km/t)</div>
     `;
 }
+
+export async function setupLiveHUD(map) {
+    // Vi henter dataen kun én gang for å spare nettverk, og lagrer den i minnet
+    const sheltersData = await fetchLocalShelters();
+    if (!sheltersData) return;
+
+    const countEl = document.getElementById('hud-count');
+    const capEl = document.getElementById('hud-cap');
+    if (!countEl || !capEl) return;
+
+    function updateHUD() {
+        // Hent koordinatene for det som er synlig på skjermen akkurat nå
+        const bounds = map.getBounds();
+        
+        // Formaterer bounding-boxen slik Turf.js vil ha den: [minX, minY, maxX, maxY]
+        const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+        const searchPoly = turf.bboxPolygon(bbox);
+
+        // Finner alle tilfluktsrom som befinner seg innenfor firkanten
+        const visiblePoints = turf.pointsWithinPolygon(sheltersData, searchPoly);
+
+        // Kalkulerer totalsummene
+        const count = visiblePoints.features.length;
+        const totalCapacity = visiblePoints.features.reduce((sum, feature) => {
+            return sum + (feature.properties.plasser || 0);
+        }, 0);
+
+        // Oppdaterer DOM - toLocaleString gir fine tusenskilletegn (f.eks 10 500)
+        countEl.innerText = count.toLocaleString('no-NO');
+        capEl.innerText = totalCapacity.toLocaleString('no-NO') + ' PAX';
+    }
+
+    // Lytter på kartbevegelser. Oppdaterer HUD-en hver gang brukeren slipper musa etter panorering/zoom.
+    map.on('moveend', updateHUD);
+    map.on('zoomend', updateHUD);
+    
+    // Tvinger en umiddelbar oppdatering når kartet lastes første gang
+    updateHUD();}

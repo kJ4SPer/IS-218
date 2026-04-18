@@ -1,6 +1,6 @@
 import { initializeMap } from './map.js';
 import { addResourcesLayer, addSheltersLayer, addFloodLayers, addRouteLayer } from './layers.js';
-import { setupLayerToggles, addLayerInteractions, addMapClickInteraction, setupMyLocationButton, setupRoutingUI } from './ui.js';
+import { setupLayerToggles, addLayerInteractions, addMapClickInteraction, setupMyLocationButton, setupRoutingUI, setupLiveHUD } from './ui.js';
 
 const loader = document.getElementById('loader');
 
@@ -32,7 +32,7 @@ map.on('load', async () => {
         
         // Legger til rute-knappen i det venstre panelet
         setupRoutingUI(map);
-
+        setupLiveHUD(map);
         // --- ANIMERT RADARPULS ---
         let radius = 15;
         let opacity = 0.8;

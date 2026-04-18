@@ -105,3 +105,65 @@ body {
     margin-bottom: 8px;
 }
 .custom-popup p { margin-bottom: 4px; font-size: 0.85rem; }
+
+.user-location-pulse {
+    width: 15px;
+    height: 15px;
+    background-color: #3b82f6;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    animation: pulse-ring 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+    border: 2px solid white;
+}
+
+@keyframes pulse-ring {
+    to {
+        box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+    }
+}
+
+/* --- RESPONSIV MOBIL-TILPASNING (BOTTOM SHEET) --- */
+
+.responsive-sidebar {
+    position: absolute;
+    z-index: 1000;
+    top: 1rem;
+    left: 1rem;
+    width: 280px;
+}
+
+.responsive-legend {
+    position: absolute;
+    z-index: 1000;
+    bottom: 30px;
+    left: 1rem;
+}
+
+/* Regler som kun slår inn på mobilskjermer (under 768px) */
+@media (max-width: 768px) {
+    .responsive-sidebar {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0; /* Avrundede hjørner på toppen */
+        max-height: 45vh; /* Tar opp maks 45% av skjermen fra bunnen */
+        overflow-y: auto; /* Gjør panelet rullbart hvis det er mange elementer */
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.6);
+        border: none;
+        border-top: 1px solid #444;
+        padding-bottom: 20px; /* Ekstra luft i bunnen for nyere iPhoner */
+    }
+
+    .responsive-legend {
+        display: none !important; /* Skjuler tegnforklaring på mobil for å spare plass */
+    }
+
+    /* Flytter MapLibre sine knapper (zoom etc) opp slik at de ikke havner bak panelet */
+    .maplibregl-ctrl-bottom-right,
+    .maplibregl-ctrl-bottom-left {
+        bottom: 48vh !important;
+        transition: bottom 0.3s ease;
+    }
+}
