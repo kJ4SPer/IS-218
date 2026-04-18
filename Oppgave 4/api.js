@@ -113,3 +113,16 @@ export async function findResourcesWithinRadius(lon, lat, radiusMeter) {
     
     return data;
 }
+
+export async function fetchRoute(start, end) {
+    try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end[0]},${end[1]}?overview=full&geometries=geojson`;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data.routes[0];
+    } catch (error) {
+        console.error("Feil ved henting av rute:", error);
+        return null;
+    }
+}

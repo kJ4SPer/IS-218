@@ -1,4 +1,5 @@
-import { findNearestResource, findResourcesWithinRadius } from './api.js';
+import { findNearestResource, findResourcesWithinRadius, fetchRoute, fetchLocalShelters } from './api.js';
+import { updateRouteLayer } from './layers.js';
 
 function toggleLayerVisibility(map, layerId, isVisible) {
     if (map.getLayer(layerId)) {
@@ -34,7 +35,6 @@ export function addLayerInteractions(map) {
         map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
     });
 
-    // Zoom inn når man klikker på et cluster
     map.on('click', 'tilfluktsrom-clusters', (e) => {
         const features = map.queryRenderedFeatures(e.point, { layers: ['tilfluktsrom-clusters'] });
         const clusterId = features[0].properties.cluster_id;
@@ -51,7 +51,6 @@ export function addMapClickInteraction(map) {
             layers: ['saarbare-lag', 'tilfluktsrom-lag', 'ressurser-lag']
         });
 
-        // 1. KLIKK PÅ OBJEKT
         if (features.length > 0) {
             const feature = features[0];
             const coords = feature.geometry.coordinates.slice();
@@ -87,7 +86,6 @@ export function addMapClickInteraction(map) {
             return;
         }
 
-        // 2. KLIKK PÅ TOMT KART: RADARSØK
         const klikk_lon = e.lngLat.lng;
         const klikk_lat = e.lngLat.lat;
         const radiusMeter = 1000;
@@ -153,17 +151,100 @@ export function setupMyLocationButton(map) {
     btn.addEventListener('click', () => {
         if (!navigator.geolocation) return alert("SYS.ERR: GEO_NOT_SUPPORTED");
 
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> SØKER...';
+
         navigator.geolocation.getCurrentPosition((pos) => {
             const { longitude, latitude } = pos.coords;
             map.flyTo({ center: [longitude, latitude], zoom: 15, speed: 1.2 });
 
             if (marker) marker.remove();
             
-            // Taktisk blå markør
             marker = new maplibregl.Marker({ color: '#3b82f6' })
                 .setLngLat([longitude, latitude])
                 .addTo(map);
                 
-        }, () => alert("SYS.ERR: GEO_DENIED"));
+            btn.innerHTML = originalText;
+        }, () => {
+            alert("SYS.ERR: GEO_DENIED");
+            btn.innerHTML = originalText;
+        });
     });
+}
+
+export function setupRoutingUI(map) {
+    const routeBtn = document.getElementById('find-route-btn');
+    if (!routeBtn) return;
+
+    routeBtn.onclick = () => {
+        routeBtn.disabled = true;
+        const originalText = routeBtn.innerHTML;
+        routeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> BEREGNER...';
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const userPos = [position.coords.longitude, position.coords.latitude];
+            
+            try {
+                // Henter absolutte data, slik at vi ikke er avhengig av skjermutsnitt/clustering
+                const sheltersData = await fetchLocalShelters();
+                
+                if (!sheltersData || !sheltersData.features || sheltersData.features.length === 0) {
+                    alert("SYS.ERR: Kunne ikke hente tilfluktsrom-data.");
+                    resetBtn();
+                    return;
+                }
+
+                // Turf regner ut det nøyaktige nærmeste punktet i datasettet
+                const nearest = turf.nearestPoint(turf.point(userPos), sheltersData);
+
+                // Fikser undefined-feilen: Konverterer array til objekt slik API-en forventer
+                const startObj = { lng: userPos[0], lat: userPos[1] };
+                const routeData = await fetchRoute(startObj, nearest.geometry.coordinates);
+
+                if (routeData && routeData.geometry) {
+                    updateRouteLayer(map, routeData.geometry);
+                    
+                    const distanceKm = (routeData.distance / 1000).toFixed(1);
+                    const timeMin = Math.max(1, Math.round((distanceKm / 60) * 60));
+
+                    // Turf returnerer egenskapene, vi plukker ut de mest logiske
+                    const romNavn = nearest.properties.navn || nearest.properties.adresse || nearest.properties.romnr || 'UKJENT';
+
+                    showRouteInfo(distanceKm, timeMin, romNavn);
+                    
+                    // Finner en fin zoom/bounding box som viser både start og mål
+                    const bounds = new maplibregl.LngLatBounds(userPos, userPos);
+                    bounds.extend(nearest.geometry.coordinates);
+                    map.fitBounds(bounds, { padding: {top: 50, bottom: 50, left: 350, right: 50}, maxZoom: 15 });
+                } else {
+                    alert("SYS.ERR: Klarte ikke å generere rute via OSRM.");
+                }
+            } catch (error) {
+                console.error("Ruting-feil:", error);
+            } finally {
+                resetBtn();
+            }
+        }, (err) => {
+            alert("Kunne ikke hente posisjon: " + err.message);
+            resetBtn();
+        });
+
+        function resetBtn() {
+            routeBtn.disabled = false;
+            routeBtn.innerHTML = originalText;
+        }
+    };
+}
+
+function showRouteInfo(dist, time, name) {
+    const infoBox = document.getElementById('route-info-box');
+    if (!infoBox) return;
+    
+    infoBox.style.display = 'block';
+    infoBox.innerHTML = `
+        <div class="fw-bold text-danger mb-1 border-bottom border-secondary pb-1">AKTIV RUTE</div>
+        <div class="mt-2 text-truncate" title="${name}">MÅL: ${name}</div>
+        <div>AVST: ${dist} km</div>
+        <div>TID: ${time} min</div>
+    `;
 }

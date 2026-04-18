@@ -132,3 +132,39 @@ export function addFloodLayers(map) {
         }
     });
 }
+
+export function addRouteLayer(map) {
+    map.addSource('route', {
+        type: 'geojson',
+        data: {
+            type: 'FeatureCollection',
+            features: []
+        }
+    });
+
+    map.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+        },
+        paint: {
+            'line-color': '#007cbf',
+            'line-width': 5,
+            'line-opacity': 0.75
+        }
+    });
+}
+
+export function updateRouteLayer(map, routeGeoJSON) {
+    const source = map.getSource('route');
+    if (source) {
+        source.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: routeGeoJSON
+        });
+    }
+}
