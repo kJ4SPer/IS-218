@@ -125,7 +125,7 @@ export function addMapClickInteraction(map) {
 
         let htmlInnhold = `
             <div class="custom-popup font-mono">
-                <h3 style="color: #4fd1c5; border-color: #4fd1c5;">RADARSØK AKTIV</h3>
+                <h3 style="color: #4fd1c5; border-color: #4fd1c5;">OMRÅDESØK</h3>
                 <p>RAD: ${radiusMeter}m</p>
         `;
 
