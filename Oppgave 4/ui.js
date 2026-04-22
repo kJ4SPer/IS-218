@@ -203,7 +203,7 @@ export function setupRoutingUI(map) {
                 return;
             }
 
-            // Finn nærmeste punkt ved hjelp av Turf.js (mer nøyaktig enn queryRenderedFeatures)
+            // Finn nærmeste punkt ved hjelp av Turf.js
             const userPoint = turf.point(currentUserPosition);
             const nearest = turf.nearestPoint(userPoint, sheltersData);
 
@@ -217,7 +217,7 @@ export function setupRoutingUI(map) {
                 const distanceKm = (routeData.distance / 1000).toFixed(1);
                 const timeMin = Math.max(1, Math.round((distanceKm / 60) * 60));
 
-                showRouteInfo(distanceKm, timeMin, nearest.properties.navn || nearest.properties.adresse || "Nærmeste rom");
+                showRouteInfo(map, distanceKm, timeMin, nearest.properties.navn || nearest.properties.adresse || "Nærmeste rom");
                 
                 // Wow-faktor: Filmatisk "Helikopter-view"
                 const bearing = turf.bearing(userPoint, nearest);
@@ -227,9 +227,9 @@ export function setupRoutingUI(map) {
                 map.fitBounds(bounds, {
                     padding: {top: 50, bottom: 50, left: 350, right: 50},
                     maxZoom: 15,
-                    pitch: 60,       // Tilt kartet
-                    bearing: bearing, // Roter i kjøreretning
-                    duration: 3000,   // Myk overgang
+                    pitch: 60,
+                    bearing: bearing,
+                    duration: 3000,
                     essential: true
                 });
             } else {
@@ -244,21 +244,29 @@ export function setupRoutingUI(map) {
     };
 }
 
-function showRouteInfo(dist, time, name) {
+function showRouteInfo(map, dist, time, name) {
     const infoBox = document.getElementById('route-info-box');
     if (!infoBox) return;
     
     infoBox.style.display = 'block';
     infoBox.innerHTML = `
-        <div class="fw-bold text-danger mb-1 border-bottom border-secondary pb-1 text-uppercase">Aktiv Rute</div>
+        <div class="fw-bold text-danger mb-1 border-bottom border-secondary pb-1 text-uppercase d-flex justify-content-between align-items-center">
+            <span>Aktiv Rute</span>
+            <button id="clear-route-btn" class="btn btn-sm btn-outline-danger py-0 px-1 font-mono" style="font-size: 10px;">[X] FJERN</button>
+        </div>
         <div class="mt-2 text-truncate" title="${name}">MÅL: ${name}</div>
         <div>AVST: ${dist} km</div>
         <div>TID: ~${time} min (60km/t)</div>
     `;
+
+    document.getElementById('clear-route-btn').onclick = () => {
+        updateRouteLayer(map, { type: 'FeatureCollection', features: [] });
+        map.easeTo({ pitch: 0, bearing: 0 });
+        infoBox.style.display = 'none';
+    };
 }
 
 export async function setupLiveHUD(map) {
-    // Vi henter dataen kun én gang for å spare nettverk, og lagrer den i minnet
     const sheltersData = await fetchLocalShelters();
     if (!sheltersData) return;
 
@@ -267,30 +275,22 @@ export async function setupLiveHUD(map) {
     if (!countEl || !capEl) return;
 
     function updateHUD() {
-        // Hent koordinatene for det som er synlig på skjermen akkurat nå
         const bounds = map.getBounds();
-        
-        // Formaterer bounding-boxen slik Turf.js vil ha den: [minX, minY, maxX, maxY]
         const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
         const searchPoly = turf.bboxPolygon(bbox);
 
-        // Finner alle tilfluktsrom som befinner seg innenfor firkanten
         const visiblePoints = turf.pointsWithinPolygon(sheltersData, searchPoly);
 
-        // Kalkulerer totalsummene
         const count = visiblePoints.features.length;
         const totalCapacity = visiblePoints.features.reduce((sum, feature) => {
             return sum + (feature.properties.plasser || 0);
         }, 0);
 
-        // Oppdaterer DOM - toLocaleString gir fine tusenskilletegn (f.eks 10 500)
         countEl.innerText = count.toLocaleString('no-NO');
         capEl.innerText = totalCapacity.toLocaleString('no-NO') + ' PAX';
     }
 
-    // Lytter på kartbevegelser. Oppdaterer HUD-en hver gang brukeren slipper musa etter panorering/zoom.
     map.on('moveend', updateHUD);
     map.on('zoomend', updateHUD);
-    
-    // Tvinger en umiddelbar oppdatering når kartet lastes første gang
-    updateHUD();}
+    updateHUD();
+}

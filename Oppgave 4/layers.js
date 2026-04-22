@@ -183,7 +183,7 @@ export function add3DBuildings(map) {
     map.addLayer(
         {
             'id': '3d-buildings',
-            'source': 'composite', // Avhenger av stilen din, ofte 'openmaptiles' eller 'composite'
+            'source': 'composite', 
             'source-layer': 'building',
             'filter': ['==', 'extrude', 'true'],
             'type': 'fill-extrusion',
