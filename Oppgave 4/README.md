@@ -35,11 +35,12 @@ Vi har utviklet en interaktiv web-portal som kombinerer sanntidsdata fra **Supab
 
 ## 🛠️ Teknisk Oppsett
 
-Prosjektet er bygget modulært for enkel utvidelse:
+Prosjektet er bygget på en moderne **GeoStack** som sikrer effektiv dataflyt fra rådata til interaktiv visualisering.
 
-- `layers.js`: Håndterer kartografi og datakilder (WMS, GeoJSON, API).
-- `klimaanalyse.ipynb`: Inneholder den reproduserbare Python-koden for analysen.
-- `ui.js`: Styrer interaksjoner og dynamisk statistikk.
+- **Analyse (Python):** Vi benytter **GeoPandas** for avansert romlig analyse (_Spatial Join_). Ved å koble flomsoner fra NVE med tilfluktsrom-data fra DSB, har vi identifisert kritiske sårbarheter. All data er transformert fra **EPSG:25832** til **Web Mercator (EPSG:4326)** for optimal ytelse i nettleseren.
+- **Backend & Database (Supabase):** Dynamiske beredskapsressurser håndteres via en skybasert **PostgreSQL**-database. Dette gjør løsningen skalerbar og muliggjør sanntidsoppdatering av kartet uten at kildekoden må endres.
+- **Kartmotor (MapLibre GL JS):** Valgt for sin evne til å bruke maskinvareakselerert rendering (WebGL). Dette sikrer at tunge datasett, som 200-årsflomsoner, vises sømløst med høy bildefrekvens.
+- **Arkitektur:** Applikasjonen følger **modulære prinsipper (ES6)**. Logikken er separert i dedikerte moduler (`api.js`, `layers.js`, `ui.js`) for å skille datakall, kartografi og brukergrensesnitt.
 
 ---
 
