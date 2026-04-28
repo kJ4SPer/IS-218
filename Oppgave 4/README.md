@@ -1,14 +1,14 @@
-# 🛡️ Beredskap Agder
+# 🛡️ Beredskap i Agder
 
 ### _Smartere beredskap gjennom interaktiv klimaanalyse_
 
 ![Banner](banner_beredskap_agder.png)
 
-## 🎯 Pitch: Hvorfor, Hva og Hvordan?
+## Hvorfor, Hva og Hvordan?
 
 ### **Hvorfor? (Problemet)**
 
-Klimaendringene øker risikoen for ekstreme flomhendelser og havnivåstigning i Kristiansand. Under en krisesituasjon er tilgang til tilfluktsrom og beredskapsressurser kritisk. Men hva skjer når selve tryggheten – tilfluktsrommene – blir rammet av flommen?
+Klimaendringene øker risikoen for ekstreme flomhendelser og havnivåstigning i Kristiansand. Under en krisesituasjon er tilgang til tilfluktsrom og beredskapsressurser kritisk. Men hva skjer når selve tryggheten, tilfluktsrommene, blir rammet av flommen?
 
 ### **Hva? (Løsningen)**
 
@@ -16,7 +16,7 @@ Vi har utviklet en interaktiv web-portal som kombinerer sanntidsdata fra **Supab
 
 - **Offentlige tilfluktsrom** og deres kapasitet.
 - **Sårbarhetsanalyse:** Identifisering av rom som settes ut av spill ved en 200-årsflom.
-- **Ressurskartlegging:** Nærmeste apotek, matbutikker og beredskapslagre.
+- **Ressurskartlegging:** Nærmeste apotek, matbutikker og beredskapslagre (blir lagt inn fortløpende).
 
 ### **Hvordan? (Teknologien)**
 
@@ -43,6 +43,6 @@ Prosjektet er bygget modulært for enkel utvidelse:
 
 ---
 
-## 👥 Gruppen bak prosjektet
+## 👥 Gruppen bak prosjektet: De Digitale Disiplene
 
-_Laget som en del av IS-218 ved Universitetet i Agder._
+_Laget i forbindelse med faget IS-218 ved Universitetet i Agder._
